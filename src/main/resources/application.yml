@@ -1,0 +1,28 @@
+server:
+  port: ${SERVER_PORT:8085}
+
+spring:
+  application:
+    name: notification-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:notification-service}
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
+
+notification:
+  kafka:
+    topic: ${KAFKA_NOTIFICATION_TOPIC:notification-events}
+  delivery:
+    # console is a development placeholder; choose the approved channel before production.
+    mode: ${NOTIFICATION_DELIVERY_MODE:console}
+
+logging:
+  level:
+    com.ailearning.notificationservice: INFO
+    org.springframework.kafka: INFO
