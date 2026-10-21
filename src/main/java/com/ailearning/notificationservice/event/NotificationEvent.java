@@ -1,3 +1,4 @@
+
 package com.ailearning.notificationservice.event;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -5,11 +6,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.Instant;
 import java.util.Map;
 
-/**
- * Starter event contract. Confirm field names and schema with the producer team.
- * Unknown JSON properties are ignored to make local integration less brittle,
- * but the agreed production schema should be documented and validated.
- */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record NotificationEvent(
         String eventId,

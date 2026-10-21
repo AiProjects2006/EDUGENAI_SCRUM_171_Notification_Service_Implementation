@@ -1,3 +1,4 @@
+
 package com.ailearning.notificationservice.consumer;
 
 import com.ailearning.notificationservice.event.NotificationEvent;
@@ -11,34 +12,57 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class NotificationEventConsumer {
-    private static final Logger log = LoggerFactory.getLogger(NotificationEventConsumer.class);
+
+    private static final Logger log =
+            LoggerFactory.getLogger(NotificationEventConsumer.class);
 
     private final ObjectMapper objectMapper;
     private final NotificationProcessingService processingService;
 
-    public NotificationEventConsumer(ObjectMapper objectMapper,
-                                     NotificationProcessingService processingService) {
+    public NotificationEventConsumer(
+            ObjectMapper objectMapper,
+            NotificationProcessingService processingService) {
         this.objectMapper = objectMapper;
         this.processingService = processingService;
     }
 
-    @KafkaListener(topics = "${notification.kafka.topic}")
+    @KafkaListener(
+            topics = "${notification.kafka.topic}",
+            groupId = "${spring.kafka.consumer.group-id}"
+    )
     public void consume(String payload) {
+
+        // Reject an empty Kafka message before attempting JSON parsing.
+        if (payload == null || payload.isBlank()) {
+            log.warn("Rejected empty notification event");
+            return;
+        }
+
         final NotificationEvent event;
+
         try {
-            event = objectMapper.readValue(payload, NotificationEvent.class);
+            event = objectMapper.readValue(
+                    payload, NotificationEvent.class);
         } catch (JsonProcessingException ex) {
-            // Production deployments should configure a dead-letter topic / error handler.
-            log.error("Unable to deserialize notification event; payload rejected. reason={}",
+            log.error("Rejected invalid notification JSON: {}",
                     ex.getOriginalMessage());
             return;
         }
 
         if (event == null || !event.hasMinimumRequiredFields()) {
-            log.warn("Notification event rejected because required fields are missing");
+            log.warn(
+                    "Rejected notification event: required fields are missing");
             return;
         }
 
+        // Do not swallow processing failures. Allow Kafka's configured
+        // error handler to apply its retry/recovery policy.
         processingService.process(event);
+
+        log.info(
+                "Notification event processed. eventId={}, eventType={}",
+                event.eventId(),
+                event.eventType()
+        );
     }
 }
