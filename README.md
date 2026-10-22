@@ -1,93 +1,175 @@
 # Notification Service
 
-Starter implementation for EDUGENAI Notification Service sprint tasks SCRUM-170–SCRUM-173.
+Notification Service for the EDUGENAI project. This service consumes notification events, validates them, processes them, and passes them to a delivery adapter.
 
-## Important integration decisions to confirm
+Sprint tasks:
+- SCRUM-170: Set Up and Configure Kafka Integration
+- SCRUM-171: Implement Notification Event Consumer
+- SCRUM-172: Implement Notification Processing Logic and Delivery Mechanism
+- SCRUM-173: Test and Document Notification Service
 
-Before treating this as complete or deploying it, confirm with the team:
-1. Repository naming/number and branch protection rules.
-2. Kafka broker address, topic name, authentication and topic ownership.
-3. Producer event schema and event types.
-4. Delivery channel: email, in-app, or both.
-5. Required database, Keycloak integration and deployment target.
+## Current implementation status
 
-This starter uses a **console delivery adapter for development only**. It logs that an event was handled; it does not send an email or persist an in-app notification. Replace/add a delivery adapter once the team agrees on the channel.
+- Kafka event consumption has been tested locally.
+- Notification processing and console delivery are implemented.
+- SQS consumer code and unit tests are included.
+- The automated test suite currently has 15 passing tests.
+- Real AWS SQS consumption and real email delivery have not yet been verified.
 
-## Stack
+Console delivery is for local development only. It logs notification details but does not send emails or persist in-app notifications.
+
+## Technology stack
 
 - Java 17
-- Spring Boot 3.5.16 (align with team-approved version)
+- Spring Boot
 - Maven
 - Spring Kafka
+- AWS SDK for Java 2.x (SQS)
 - Spring Web
-- JUnit 5 / Mockito
+- JUnit 5 and Mockito
 
-## Project layout
+## Project structure
 
-- `consumer/NotificationEventConsumer.java`: Kafka listener and JSON parsing.
-- `event/NotificationEvent.java`: example event model; align with producer contract.
-- `service/NotificationProcessingService.java`: validation and processing.
+- `consumer/NotificationEventConsumer.java`: Kafka event consumer.
+- `consumer/SqsNotificationEventConsumer.java`: SQS polling and message processing.
+- `config/AwsSqsConfig.java`: AWS SQS client configuration.
+- `event/NotificationEvent.java`: notification event model.
+- `service/NotificationProcessingService.java`: event validation and processing.
 - `delivery/NotificationDelivery.java`: delivery abstraction.
-- `delivery/ConsoleNotificationDelivery.java`: development-only adapter.
-- `api/HealthController.java`: `GET /health`.
-- `src/test`: unit and Spring context tests.
+- `delivery/ConsoleNotificationDelivery.java`: development-only delivery adapter.
+- `api/HealthController.java`: health endpoint.
+- `src/test`: automated tests.
 
-## Configure
+## Prerequisites
 
-Environment variables:
-- `KAFKA_BOOTSTRAP_SERVERS` (default `localhost:9092`)
-- `KAFKA_NOTIFICATION_TOPIC` (default `notification-events`)
-- `KAFKA_CONSUMER_GROUP` (default `notification-service`)
-- `SERVER_PORT` (default `8085`)
-- `NOTIFICATION_DELIVERY_MODE` (default `console`)
+- Java 17
+- Maven
+- Docker Desktop for the local Kafka setup
+- AWS CLI only if testing real AWS SQS
 
-Do not commit credentials. If the team Kafka uses authentication/TLS, add the required configuration using the team's approved secret handling.
+## Configuration
 
-## Run locally
+The application uses these environment variables:
 
-Requires Java 17 and Maven, or use the Maven wrapper if provided by the repository.
+| Variable | Default | Purpose |
+|---|---|---|
+| `SERVER_PORT` | `8085` | Application port |
+| `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` | Kafka broker |
+| `KAFKA_NOTIFICATION_TOPIC` | `notification-events` | Kafka topic |
+| `KAFKA_CONSUMER_GROUP` | `notification-service` | Kafka consumer group |
+| `NOTIFICATION_DELIVERY_MODE` | `console` | Development delivery adapter |
+| `AWS_REGION` | `ap-south-1` in the SQS client configuration | AWS region |
+| `NOTIFICATION_SQS_QUEUE_URL` | Not configured | Intended environment variable for the SQS queue URL; application property mapping must be configured before using it |
+| `NOTIFICATION_SQS_POLL_INTERVAL_MS` | `5000` | SQS polling interval |
+
+Do not commit AWS credentials, passwords, tokens, or other secrets. Use an approved AWS credential provider or IAM role.
+
+## Start Kafka locally
+
+The project has an example Docker Compose file named `compose.kafka.example.yml`.
+
+Use the team's approved local Kafka setup. If the `notification-kafka` container is already running, do not start another broker unnecessarily.
+
+Check the container:
+
+```powershell
+docker ps
+```
+
+List Kafka topics:
+
+```powershell
+docker exec notification-kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+```
+
+The `notification-events` topic should exist for the documented Kafka test.
+
+## Run automated tests
+
+From the project root:
 
 ```powershell
 mvn clean test
+```
+
+Latest recorded result:
+
+- Tests run: 15
+- Failures: 0
+- Errors: 0
+- Result: BUILD SUCCESS
+
+Run the tests again after making changes and update these figures if the results change.
+
+## Run the application
+
+```powershell
 mvn spring-boot:run
 ```
 
-The app's health endpoint is `http://localhost:8085/health`.
+Health endpoint:
 
-Kafka must be running and the configured topic must be available for the consumer to receive events. If your team already provides Kafka, use that environment. `compose.kafka.example.yml` is an optional local example only; do not start a separate broker without coordinating with the team.
+`http://localhost:8085/health`
 
-## Example event (illustrative only)
+Expected response:
 
 ```json
 {
-  "eventId": "evt-123",
-  "eventType": "COURSE_CREATED",
-  "recipientId": "student-123",
-  "recipientEmail": null,
-  "subject": "New course",
-  "message": "A new course is available",
-  "occurredAt": "2026-10-21T10:00:00Z",
-  "data": {}
+  "status": "UP",
+  "service": "notification-service"
 }
 ```
 
-The producer's actual schema is authoritative. Update the model and tests to match it.
+## Test a Kafka notification event
 
-## Suggested branch workflow
+Keep the application running in one terminal. Open a second PowerShell window and run:
 
-Create `main`, `dev`, then feature branches from `dev`:
-- `feature/kafka-setup` — SCRUM-170
-- `feature/event-consumer` — SCRUM-171
-- `feature/notification-delivery` — SCRUM-172
-- `feature/notification-tests` — SCRUM-173
+```powershell
+docker exec -i notification-kafka /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic notification-events
+```
 
-Use pull requests into `dev`; merge `dev` into `main` only according to your team's approval process.
+Paste this example as one line and press Enter:
 
-## Production-readiness items not included
+```json
+{"eventId":"sprint-test-001","eventType":"COURSE_CREATED","recipientId":"student-123","subject":"Test notification","message":"Testing notification event consumption","data":{}}
+```
 
-- Email provider or in-app persistence implementation.
-- Team-specific event contract and topic security.
-- Dead-letter topic / configured retry policy for malformed events.
-- Durable idempotency / duplicate notification prevention.
-- Keycloak security for any user-facing endpoints, if required.
-- Production observability and deployment manifests.
+Press `Ctrl+C` to exit the producer. Check the application logs for the event ID `sprint-test-001` and messages indicating notification processing.
+
+This verifies the local Kafka-to-processing flow. Console output is not proof that an email was sent.
+
+## AWS SQS status and testing
+
+The SQS consumer receives messages, passes valid events to the processing service, and deletes messages after successful processing. Failed messages are not deleted by this consumer and may be retried according to the queue's visibility and redrive configuration.
+
+Real AWS SQS integration is not yet verified. Before testing it:
+
+1. Confirm the AWS region and approved test queue.
+2. Configure the SQS queue URL through application configuration.
+3. Use valid AWS credentials and appropriate IAM permissions.
+4. Send a test message and verify successful processing and deletion.
+5. Configure and verify retry and dead-letter queue behavior.
+
+The SQS consumer is conditional on `notification.sqs.queue-url`. The current application configuration does not map `NOTIFICATION_SQS_QUEUE_URL` to that property yet.
+
+## Notification delivery status
+
+The current console adapter is intended for development. The real email provider and its API credentials have not been confirmed in this repository's current configuration.
+
+Before enabling real email delivery, agree on the provider and sender identity with the team, store secrets securely, and test success and failure scenarios.
+
+## Known limitations and follow-up work
+
+- Verify real AWS SQS consumption.
+- Confirm the final queue architecture with the team.
+- Implement and test the agreed email delivery provider.
+- Confirm the producer's event schema and supported notification types.
+- Configure retry and dead-letter queue behavior.
+- Consider duplicate-event prevention and idempotency.
+- Add production monitoring and deployment configuration as required.
+
+## Branch workflow
+
+Current development branch: `feature/notification-delivery`.
+
+Run tests before committing changes. Push tested changes to the feature branch. Follow the team's review and pull-request process when requested.
