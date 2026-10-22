@@ -8,7 +8,6 @@ spring:
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP:notification-service}
       auto-offset-reset: earliest
@@ -26,6 +25,9 @@ notification:
   delivery:
     # Console delivery is for local development only.
     mode: ${NOTIFICATION_DELIVERY_MODE:console}
+
+  sqs:
+    poll-interval-ms: ${NOTIFICATION_SQS_POLL_INTERVAL_MS:5000}
 
 logging:
   level:
