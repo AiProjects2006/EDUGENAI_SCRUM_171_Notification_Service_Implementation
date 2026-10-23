@@ -15,7 +15,11 @@ import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 
 @Component
-@ConditionalOnProperty(name = "notification.sqs.queue-url")
+@ConditionalOnProperty(
+        name = "notification.sqs.enabled",
+        havingValue = "true",
+        matchIfMissing = false
+)
 public class SqsNotificationEventConsumer {
 
     private static final Logger log =

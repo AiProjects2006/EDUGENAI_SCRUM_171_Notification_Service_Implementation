@@ -44,12 +44,6 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Kafka -->
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
-        </dependency>
-
         <!-- Amazon SQS -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>

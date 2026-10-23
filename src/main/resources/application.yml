@@ -6,30 +6,17 @@ spring:
   application:
     name: notification-service
 
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    consumer:
-      group-id: ${KAFKA_CONSUMER_GROUP:notification-service}
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
-    listener:
-      ack-mode: record
-
 notification:
-  kafka:
-    topic: ${KAFKA_NOTIFICATION_TOPIC:notification-events}
+  local:
+    enabled: true
 
   delivery:
-    # Console delivery is for local development only.
     mode: ${NOTIFICATION_DELIVERY_MODE:console}
 
   sqs:
+    enabled: ${NOTIFICATION_SQS_ENABLED:false}
     poll-interval-ms: ${NOTIFICATION_SQS_POLL_INTERVAL_MS:5000}
 
 logging:
   level:
     com.ailearning.notificationservice: INFO
-    org.springframework.kafka: INFO

@@ -1,0 +1,10 @@
+{
+  "eventId": "sqs-final-test-006",
+  "eventType": "COURSE_CREATED",
+  "recipientId": "student-001",
+  "recipientEmail": "student@example.com",
+  "subject": "Final SQS integration test",
+  "message": "SQS final test 006 processed successfully.",
+  "occurredAt": "2026-10-23T12:00:00Z",
+  "data": {}
+}
