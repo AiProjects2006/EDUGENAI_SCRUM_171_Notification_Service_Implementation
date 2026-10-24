@@ -87,4 +87,75 @@ class SqsNotificationEventConsumerTest {
         verify(sqsClient, never())
                 .deleteMessage(any(DeleteMessageRequest.class));
     }
+
+    @Test
+    void invalidJsonMessageIsNotDeleted() {
+        Message message = Message.builder()
+                .messageId("message-invalid-json")
+                .receiptHandle("receipt-invalid-json")
+                .body("{ invalid json }")
+                .build();
+
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
+                .thenReturn(ReceiveMessageResponse.builder()
+                        .messages(message).build());
+
+        consumer.pollQueue();
+
+        verifyNoInteractions(processingService);
+        verify(sqsClient, never())
+                .deleteMessage(any(DeleteMessageRequest.class));
+    }
+
+    @Test
+    void missingRequiredFieldsMessageIsNotDeleted() {
+        Message message = Message.builder()
+                .messageId("message-missing-fields")
+                .receiptHandle("receipt-missing-fields")
+                .body("""
+                        {
+                          "eventId": "sqs-test-missing",
+                          "recipientId": "student-123"
+                        }
+                        """)
+                .build();
+
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
+                .thenReturn(ReceiveMessageResponse.builder()
+                        .messages(message).build());
+
+        consumer.pollQueue();
+
+        verifyNoInteractions(processingService);
+        verify(sqsClient, never())
+                .deleteMessage(any(DeleteMessageRequest.class));
+    }
+
+    @Test
+    void emptyQueueDoesNotProcessOrDeleteMessages() {
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
+                .thenReturn(ReceiveMessageResponse.builder()
+                        .build());
+
+        consumer.pollQueue();
+
+        verifyNoInteractions(processingService);
+        verify(sqsClient, never())
+                .deleteMessage(any(DeleteMessageRequest.class));
+    }
+
+    @Test
+    void receiveMessageFailurePropagatesToCaller() {
+        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
+                .thenThrow(new RuntimeException("SQS unavailable"));
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                RuntimeException.class,
+                () -> consumer.pollQueue()
+        );
+
+        verifyNoInteractions(processingService);
+        verify(sqsClient, never())
+                .deleteMessage(any(DeleteMessageRequest.class));
+    }
 }
