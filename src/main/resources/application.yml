@@ -15,6 +15,7 @@ notification:
 
   sqs:
     enabled: ${NOTIFICATION_SQS_ENABLED:false}
+    queue-url: ${NOTIFICATION_SQS_QUEUE_URL:}
     poll-interval-ms: ${NOTIFICATION_SQS_POLL_INTERVAL_MS:5000}
 
 logging:
