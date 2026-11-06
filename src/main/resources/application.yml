@@ -17,6 +17,12 @@ spring:
       ddl-auto: update
     open-in-view: false
     show-sql: false
+
+# Email API Configuration
+email:
+  api:
+    base-url: ${EMAIL_API_BASE_URL:http://localhost:8086}
+
 notification:
   local:
     enabled: true
